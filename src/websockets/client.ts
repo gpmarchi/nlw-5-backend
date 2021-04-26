@@ -50,5 +50,31 @@ websocket.on('connect', socket => {
       user_id,
       text
     });
+
+    const allMessages = await messagesService.listByUser(user_id);
+
+    socket.emit('client_list_all_messages', allMessages);
+
+    const allUsers = await connectionsService.findAllWithoutAdmin();
+
+    websocket.emit('admin_list_all_users', allUsers);
+  });
+
+  socket.on('client_send_to_admin', async params => {
+    const { text, socket_admin_id } = params;
+
+    const socket_id = socket.id;
+
+    const { user_id } = await connectionsService.findBySocketId(socket_id);
+
+    const message = await messagesService.create({
+      text,
+      user_id
+    });
+
+    websocket.to(socket_admin_id).emit('admin_receive_message', {
+      message,
+      socket_id
+    });
   });
 });
